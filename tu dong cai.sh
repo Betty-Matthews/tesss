@@ -28,41 +28,31 @@ cd /home || { log_message "Không thể di chuyển đến thư mục /home"; ex
 
 # 3. Tải file từ Dropbox
 log_message "Đang tải file từ Dropbox..."
-curl -L "https://www.dropbox.com/scl/fo/aquqcnofrs8ipqsmlgqz4/AMqjSwLmTuuH39adHIlaCbQ?rlkey=sh2779qzxfwj5oqv5sr7wa4kf&st=e3hm48wy&dl=1" -o downloaded_file.zip
+curl -L "https://www.dropbox.com/scl/fo/aquqcnofrs8ipqsmlgqz4/AMqjSwLmTuuH39adHIlaCbQ?rlkey=sh2779qzxfwj5oqv5sr7wa4kf&st=e3hm48wy&dl=1" -o downloaded_file.tar.gz
 check_error "Không thể tải file từ Dropbox"
 
-# 4. Xác định loại file đã tải về
-log_message "Kiểm tra loại file đã tải về..."
-file_type=$(file -b downloaded_file.zip | cut -d' ' -f1)
-log_message "Loại file: $file_type"
+# 4. Giải nén file downloaded_file.tar.gz để lấy downloaded_file.zip
+log_message "Đang giải nén file downloaded_file.tar.gz..."
+tar -xzf downloaded_file.tar.gz
+check_error "Không thể giải nén file downloaded_file.tar.gz"
 
-# 5. Giải nén file tải về dựa vào loại file
-case "$file_type" in
-    "Zip")
-        log_message "Đang giải nén file ZIP..."
-        unzip -o downloaded_file.zip
-        check_error "Không thể giải nén file ZIP"
-        ;;
-    "gzip")
-        log_message "Đang giải nén file TAR.GZ..."
-        tar -xzf downloaded_file.zip
-        check_error "Không thể giải nén file TAR.GZ"
-        ;;
-    "XZ")
-        log_message "Đang giải nén file TAR.XZ..."
-        tar -xJf downloaded_file.zip
-        check_error "Không thể giải nén file TAR.XZ"
-        ;;
-    "tar")
-        log_message "Đang giải nén file TAR..."
-        tar -xf downloaded_file.zip
-        check_error "Không thể giải nén file TAR"
-        ;;
-    *)
-        log_message "File tải về không phải là file nén được hỗ trợ."
-        exit 1
-        ;;
-esac
+# 5. Giải nén các file zip trong thư mục /home
+for zipfile in cgalaxy.zip server.zip; do
+    if [ -f "/home/$zipfile" ]; then
+        log_message "Kiểm tra và xóa file cũ $zipfile nếu tồn tại..."
+        if [ -d "/home/${zipfile%.zip}" ]; then
+            log_message "Đang xóa thư mục cũ ${zipfile%.zip}..."
+            rm -rf "/home/${zipfile%.zip}"  # Xóa thư mục cũ nếu tồn tại
+            check_error "Không thể xóa thư mục cũ ${zipfile%.zip}"
+        fi
+
+        log_message "Đang giải nén $zipfile vào thư mục /home..."
+        unzip -q -o "/home/$zipfile" -d /home
+        check_error "Không thể giải nén $zipfile"
+    else
+        log_message "Cảnh báo: Không tìm thấy $zipfile trong thư mục /home"
+    fi
+done
 
 # 6. Tạo thư mục Desktop trong /root nếu chưa tồn tại
 log_message "Chuẩn bị thư mục Desktop..."
@@ -71,7 +61,7 @@ check_error "Không thể tạo thư mục /root/Desktop"
 
 # 7. Di chuyển các tệp và thư mục được chỉ định sang /root/Desktop (nếu tồn tại)
 log_message "Di chuyển các tệp và thư mục được chỉ định sang /root/Desktop..."
-for item in 0 1.txt 2 3 4 pay.zip; do
+for item in 0 1.txt 2 3 4; do
     if [ -e "/home/$item" ]; then
         mv "/home/$item" /root/Desktop/
         log_message "Đã di chuyển $item sang /root/Desktop"
@@ -80,22 +70,15 @@ for item in 0 1.txt 2 3 4 pay.zip; do
     fi
 done
 
-# 8. Giải nén tất cả các file zip trong thư mục /home (nếu tồn tại)
-log_message "Giải nén các file zip trong thư mục /home..."
-for zipfile in cgalaxy.zip client.zip server.zip; do
-    if [ -f "/home/$zipfile" ]; then
-        dirname=$(basename "$zipfile" .zip)
-        mkdir -p "/home/$dirname"
-        log_message "Đang giải nén $zipfile vào thư mục /home/$dirname..."
-        unzip -q -o "/home/$zipfile" -d "/home/$dirname"
-        check_error "Không thể giải nén $zipfile"
-    else
-        log_message "Cảnh báo: Không tìm thấy $zipfile trong thư mục /home"
-    fi
-done
-
-# 9. Giải nén file pay.zip trong thư mục /root/Desktop (nếu tồn tại)
+# 8. Giải nén file pay.zip trong thư mục /root/Desktop (nếu tồn tại)
 if [ -f "/root/Desktop/pay.zip" ]; then
+    log_message "Kiểm tra và xóa file cũ pay.zip nếu tồn tại..."
+    if [ -d "/root/Desktop/pay" ]; then
+        log_message "Đang xóa thư mục cũ pay..."
+        rm -rf "/root/Desktop/pay"  # Xóa thư mục cũ pay nếu tồn tại
+        check_error "Không thể xóa thư mục cũ pay"
+    fi
+
     log_message "Giải nén pay.zip trong thư mục /root/Desktop..."
     mkdir -p "/root/Desktop/pay"
     unzip -q -o "/root/Desktop/pay.zip" -d "/root/Desktop/pay"
