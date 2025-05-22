@@ -26,17 +26,24 @@ fi
 log_message "Di chuyển đến thư mục /home..."
 cd /home || { log_message "Không thể di chuyển đến thư mục /home"; exit 1; }
 
-# 3. Tải file từ Dropbox
+# 3. Kiểm tra và xóa file cũ downloaded_file.tar.gz nếu tồn tại
+if [ -f "downloaded_file.tar.gz" ]; then
+    log_message "Đang xóa file cũ downloaded_file.tar.gz..."
+    rm -f downloaded_file.tar.gz
+    check_error "Không thể xóa file cũ downloaded_file.tar.gz"
+fi
+
+# 4. Tải file từ Dropbox
 log_message "Đang tải file từ Dropbox..."
 curl -L "https://www.dropbox.com/scl/fo/aquqcnofrs8ipqsmlgqz4/AMqjSwLmTuuH39adHIlaCbQ?rlkey=sh2779qzxfwj5oqv5sr7wa4kf&st=e3hm48wy&dl=1" -o downloaded_file.tar.gz
 check_error "Không thể tải file từ Dropbox"
 
-# 4. Giải nén file downloaded_file.tar.gz để lấy downloaded_file.zip
+# 5. Giải nén file downloaded_file.tar.gz để lấy downloaded_file.zip
 log_message "Đang giải nén file downloaded_file.tar.gz..."
 tar -xzf downloaded_file.tar.gz
 check_error "Không thể giải nén file downloaded_file.tar.gz"
 
-# 5. Giải nén các file zip trong thư mục /home
+# 6. Giải nén các file zip trong thư mục /home
 for zipfile in cgalaxy.zip server.zip; do
     if [ -f "/home/$zipfile" ]; then
         log_message "Kiểm tra và xóa file cũ $zipfile nếu tồn tại..."
@@ -54,12 +61,12 @@ for zipfile in cgalaxy.zip server.zip; do
     fi
 done
 
-# 6. Tạo thư mục Desktop trong /root nếu chưa tồn tại
+# 7. Tạo thư mục Desktop trong /root nếu chưa tồn tại
 log_message "Chuẩn bị thư mục Desktop..."
 mkdir -p /root/Desktop
 check_error "Không thể tạo thư mục /root/Desktop"
 
-# 7. Di chuyển các tệp và thư mục được chỉ định sang /root/Desktop (nếu tồn tại)
+# 8. Di chuyển các tệp và thư mục được chỉ định sang /root/Desktop (nếu tồn tại)
 log_message "Di chuyển các tệp và thư mục được chỉ định sang /root/Desktop..."
 for item in 0 1.txt 2 3 4; do
     if [ -e "/home/$item" ]; then
@@ -70,7 +77,7 @@ for item in 0 1.txt 2 3 4; do
     fi
 done
 
-# 8. Giải nén file pay.zip trong thư mục /root/Desktop (nếu tồn tại)
+# 9. Giải nén file pay.zip trong thư mục /root/Desktop (nếu tồn tại)
 if [ -f "/root/Desktop/pay.zip" ]; then
     log_message "Kiểm tra và xóa file cũ pay.zip nếu tồn tại..."
     if [ -d "/root/Desktop/pay" ]; then
